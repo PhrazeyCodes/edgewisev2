@@ -488,6 +488,23 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
 .ai-analyze-btn { flex-shrink: 0; }
 
 
+/* ─── More dropdown (desktop) ─────────────────────────────────────────── */
+.nav-more-wrap { position: relative; }
+.nav-more-menu {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0;
+  background: var(--bg2); border: 1px solid var(--line2); border-radius: 10px;
+  padding: 5px; z-index: 100; min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35);
+}
+.nav-more-menu.open { display: block; }
+.nav-more-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 9px 12px; border: none; background: none; border-radius: 7px;
+  font-family: var(--body); font-size: 12px; font-weight: 500; color: var(--text2);
+  cursor: pointer; text-align: left; transition: all .12s; letter-spacing: .3px;
+}
+.nav-more-item:hover { background: var(--bg3); color: var(--text); }
+.nav-more-item.active { color: var(--gold); }
 /* ─── Import ──────────────────────────────────────────────────────────── */
 .imp-step.active { color: var(--gold) !important; background: rgba(212,168,75,.06) !important; }
 .imp-step.done { color: var(--text) !important; }
@@ -500,6 +517,9 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
 
 
 
+
+.mobile-nav { display: none; }
+.mobile-more-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 18px 12px; background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; font-family: var(--body); font-size: 12px; font-weight: 600; color: var(--text2); cursor: pointer; transition: all .15s; width: 100%; -webkit-tap-highlight-color: transparent; }
 
 /* ─── Responsive ──────────────────────────────────────────────────────── */
 @media(max-width: 960px) {
@@ -707,8 +727,15 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
       <button class="nav-tab" data-page="journal">Journal</button>
       <button class="nav-tab" data-page="analytics">Analytics</button>
       <button class="nav-tab" data-page="ai">AI Coach</button>
-      <button class="nav-tab" data-page="reports">Reports</button>
-      <button class="nav-tab" data-page="import">Import</button>
+      <div class="nav-more-wrap" id="nav-more-wrap">
+        <button class="nav-tab" id="nav-more-btn" onclick="toggleMoreMenu(event)">More ▾</button>
+        <div class="nav-more-menu" id="nav-more-menu">
+          <button class="nav-more-item" data-page="progress" onclick="navMoreGo('progress')">📈 Progress</button>
+          <button class="nav-more-item" data-page="challenges" onclick="navMoreGo('challenges')">🎯 Challenges</button>
+          <button class="nav-more-item" data-page="reports" onclick="navMoreGo('reports')">📋 Reports</button>
+          <button class="nav-more-item" data-page="import" onclick="navMoreGo('import')">⬆ Import</button>
+        </div>
+      </div>
     </div>
     <div class="nav-right" style="position:relative">
       <button class="btn-log" onclick="openModal()">+ Log trade</button>
@@ -867,6 +894,76 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
         <div class="card-title">Rule Compliance</div>
         <div class="card-sub">Performance when rules are followed vs broken</div>
         <div id="rule-report" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- Progress Hub: Streaks + Weekly Review + Drawdown Heatmap -->
+    <div class="page" id="page-progress">
+      <div class="ph" style="margin-bottom:20px">
+        <h1>Progress</h1>
+        <p>Streaks, drawdown heatmap &amp; weekly review</p>
+      </div>
+
+      <!-- Streak cards -->
+      <div class="stat-row" id="streak-row" style="margin-bottom:20px"></div>
+
+      <!-- Weekly Review -->
+      <div class="card mb14" id="weekly-review-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div>
+            <div class="card-title">Weekly Review</div>
+            <div class="card-sub" id="wr-week-label">This week's session</div>
+          </div>
+          <button class="btn-log" id="wr-gen-btn" onclick="generateWeeklyReview()" style="font-size:11px;padding:6px 14px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Ask AI Coach
+          </button>
+        </div>
+        <!-- Week stats summary -->
+        <div id="wr-stats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0;padding:14px;background:var(--bg2);border-radius:8px"></div>
+        <!-- Replay notes from this week -->
+        <div id="wr-replays" style="margin-bottom:12px"></div>
+        <!-- AI prompt / response area -->
+        <div id="wr-ai-area"></div>
+      </div>
+
+      <!-- Drawdown Heatmap -->
+      <div class="card">
+        <div class="card-title">Drawdown Heatmap</div>
+        <div class="card-sub">Daily drawdown intensity — darker = closer to max loss limit</div>
+        <div style="display:flex;align-items:center;gap:16px;margin:12px 0 4px">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Account size: $</div>
+          <input type="number" id="hm-account-size" value="50000" style="width:100px;background:var(--bg2);border:1px solid var(--line2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="renderHeatmap()"/>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Max daily loss %:</div>
+          <input type="number" id="hm-max-dd" value="5" style="width:60px;background:var(--bg2);border:1px solid var(--line2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="renderHeatmap()"/>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text3)">
+            <div style="width:12px;height:12px;border-radius:3px;background:rgba(57,196,122,.2)"></div>Safe
+            <div style="width:12px;height:12px;border-radius:3px;background:rgba(212,168,75,.5);margin-left:8px"></div>Caution
+            <div style="width:12px;height:12px;border-radius:3px;background:rgba(240,90,110,.8);margin-left:8px"></div>Danger
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div class="cal-month-label" id="hm-label"></div>
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="hmNav(-1)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <button class="cal-nav-btn" onclick="hmNav(1)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+        </div>
+        <div id="hm-grid"></div>
+      </div>
+    </div>
+
+    <!-- Challenge Tracker -->
+    <div class="page" id="page-challenges">
+      <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+        <div><h1>Challenges</h1><p>Track active prop firm evaluations &amp; funded accounts</p></div>
+        <button class="btn-log" onclick="openChallengeModal()">+ Add Account</button>
+      </div>
+      <div id="challenges-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
+      <div id="challenges-empty" style="display:none;text-align:center;padding:60px 20px">
+        <div style="font-size:40px;margin-bottom:12px">🎯</div>
+        <div style="font-family:var(--serif);font-size:18px;font-weight:300;margin-bottom:6px">No accounts tracked yet</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Add your active evaluations and funded accounts to track rules and progress</div>
       </div>
     </div>
 
@@ -1032,13 +1129,89 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         Stats
       </button>
-      <button class="mobile-nav-btn" data-page="ai" onclick="mobileNav(this,'ai')">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        AI
+      <button class="mobile-nav-btn" onclick="toggleMobileMore()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+        More
       </button>
     </div>
   </nav>
 
+  <!-- Mobile More sheet -->
+  <div id="mobile-more-overlay" onclick="closeMobileMore()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150"></div>
+  <div id="mobile-more-sheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg1);border-radius:18px 18px 0 0;border-top:1px solid var(--line2);padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));z-index:151">
+    <div style="width:36px;height:3px;background:var(--line2);border-radius:2px;margin:0 auto 20px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <button class="mobile-more-tile" onclick="mobileMoreGo('ai')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        AI Coach
+      </button>
+      <button class="mobile-more-tile" onclick="mobileMoreGo('progress')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Progress
+      </button>
+      <button class="mobile-more-tile" onclick="mobileMoreGo('challenges')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+        Challenges
+      </button>
+      <button class="mobile-more-tile" onclick="mobileMoreGo('reports')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Reports
+      </button>
+      <button class="mobile-more-tile" onclick="mobileMoreGo('import')" style="grid-column:1/-1">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        Import CSV
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Challenge Modal -->
+<div class="overlay" id="challenge-modal-overlay">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-hd">
+      <h2 id="ch-modal-title">Add Account</h2>
+      <button class="modal-close" onclick="closeChallengeModal()">×</button>
+    </div>
+    <div class="modal-body" style="gap:14px">
+      <div class="field-group c2">
+        <div class="field"><label>Firm</label>
+          <select id="ch-firm">
+            <option value="">— Select —</option>
+            <option>FTMO</option><option>FundedNext</option><option>Apex Trader</option>
+            <option>Topstep</option><option>TradeLocker</option><option>E8 Funding</option>
+            <option>MyFundedFX</option><option>TradeDay</option><option>Earn2Trade</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field"><label>Account Size ($)</label><input type="number" id="ch-size" placeholder="50000"/></div>
+      </div>
+      <div class="field-group c2">
+        <div class="field"><label>Phase / Status</label>
+          <select id="ch-phase">
+            <option value="eval1">Evaluation — Phase 1</option>
+            <option value="eval2">Evaluation — Phase 2</option>
+            <option value="funded">Funded Account</option>
+            <option value="paused">Paused</option>
+          </select>
+        </div>
+        <div class="field"><label>Start Date</label><input type="date" id="ch-start"/></div>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:4px;margin-bottom:2px">Rules</div>
+      <div class="field-group c3">
+        <div class="field"><label>Profit Target ($)</label><input type="number" id="ch-target" placeholder="e.g. 5000"/></div>
+        <div class="field"><label>Max Daily Loss ($)</label><input type="number" id="ch-daily-loss" placeholder="e.g. 1000"/></div>
+        <div class="field"><label>Max Trailing DD ($)</label><input type="number" id="ch-max-dd" placeholder="e.g. 2500"/></div>
+      </div>
+      <div class="field-group c2">
+        <div class="field"><label>Min Trading Days</label><input type="number" id="ch-min-days" placeholder="e.g. 5"/></div>
+        <div class="field"><label>Nickname / Label</label><input type="text" id="ch-label" placeholder="e.g. NQ scalper"/></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeChallengeModal()">Cancel</button>
+        <button class="btn-save" onclick="saveChallenge()">Save Account</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Log Trade Modal -->
@@ -1145,6 +1318,13 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
       <div class="field-group c2">
         <div class="field"><label>Reasoning / Thesis</label><textarea id="f-reason" placeholder="Why did you take this trade?"></textarea></div>
         <div class="field"><label>Post-Trade Notes</label><textarea id="f-notes" placeholder="What happened? What did you learn?"></textarea></div>
+      </div>
+      <div class="field">
+        <label style="display:flex;align-items:center;gap:6px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Trade Replay — What would you do differently?
+        </label>
+        <textarea id="f-replay" placeholder="If you could replay this trade, what would you change? Entry timing, sizing, target, exit…" style="min-height:60px"></textarea>
       </div>
 
       <div>
@@ -1291,6 +1471,8 @@ function renderPage(p){
   if(p==='journal') renderJournal();
   if(p==='analytics') renderAnalytics();
   if(p==='reports') renderReports();
+  if(p==='progress') { renderStreaks(); renderWeeklyReview(); renderHeatmap(); }
+  if(p==='challenges') renderChallenges();
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────
@@ -1351,6 +1533,29 @@ function renderDashboard(){
   </div>`;
 
   renderStratBars('strat-bars');
+
+  // Streak mini-banner on dashboard
+  if(S.trades.length) {
+    const s = calcStreaks();
+    const dash = document.getElementById('page-dashboard');
+    let banner = document.getElementById('dash-streak-banner');
+    if(!banner) {
+      banner = document.createElement('div');
+      banner.id = 'dash-streak-banner';
+      banner.style.cssText = 'margin-top:12px;padding:12px 20px;background:var(--bg1);border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;gap:24px;cursor:pointer';
+      banner.title = 'Go to Progress tab';
+      banner.onclick = () => document.querySelector('.nav-tab[data-page="progress"]').click();
+      dash.appendChild(banner);
+    }
+    banner.innerHTML = `
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;flex-shrink:0">Streaks</div>
+      <div style="display:flex;gap:20px;flex:1">
+        <div style="font-family:var(--mono);font-size:12px">🔥 <span style="color:var(--green)">${s.greenStreak}</span> <span style="color:var(--text3)">green days</span></div>
+        <div style="font-family:var(--mono);font-size:12px">📋 <span style="color:var(--blue)">${s.ruleStreak}</span> <span style="color:var(--text3)">rule days</span></div>
+        ${s.curLoss>=2?`<div style="font-family:var(--mono);font-size:12px">⚠️ <span style="color:var(--red)">${s.curLoss}</span> <span style="color:var(--text3)">loss run</span></div>`:''}
+        <div style="font-family:var(--mono);font-size:12px;margin-left:auto;color:var(--text3)">View Progress →</div>
+      </div>`;
+  }
 }
 
 function drawEquity(){
@@ -1638,7 +1843,7 @@ document.getElementById('modal-overlay').addEventListener('click',e=>{if(e.targe
 
 function resetModal(){
   document.getElementById('f-date').value=today();
-  ['f-inst','f-dir','f-size','f-etime','f-xtime','f-pnl','f-risk','f-pnl-pct','f-reason','f-notes','f-account'].forEach(id=>{
+  ['f-inst','f-dir','f-size','f-etime','f-xtime','f-pnl','f-risk','f-pnl-pct','f-reason','f-notes','f-replay','f-account'].forEach(id=>{
     const el=document.getElementById(id);
     if(el.tagName==='SELECT') el.selectedIndex=0; else el.value='';
   });
@@ -1667,6 +1872,7 @@ function fillModal(t){
   document.getElementById('f-r-display').textContent=t.r?fmtR(t.r):'—';
   document.getElementById('f-reason').value=t.reasoning||'';
   document.getElementById('f-notes').value=t.notes||'';
+  document.getElementById('f-replay').value=t.replay||'';
   document.getElementById('f-strategy-input').value=t.strategy||'';
   document.querySelectorAll('#emo-tags .tag').forEach(tag=>{ tag.className='tag'; if(tag.dataset.v===t.emotion) tag.classList.add('sel'); });
   document.querySelectorAll('#dm-tags .tag').forEach(tag=>{
@@ -1753,6 +1959,7 @@ async function saveTrade(){
     exec: parseInt(document.getElementById('f-exec').value)||5,
     reasoning: document.getElementById('f-reason').value,
     notes: document.getElementById('f-notes').value,
+    replay: document.getElementById('f-replay').value,
     dayMarkers: dm, screenshots: pendingShots,
   };
   if(editId) S.trades=S.trades.map(x=>x.id===editId?t:x);
@@ -1859,6 +2066,345 @@ function mobileNav(btn, page) {
   activeTab = page;
   renderPage(page);
 }
+
+// ── STREAKS ───────────────────────────────────────────────────────────────────
+function calcStreaks() {
+  const sorted = S.trades.slice().sort((a,b) => a.date.localeCompare(b.date));
+  // Group by date
+  const byDate = {};
+  sorted.forEach(t => { if(!byDate[t.date]) byDate[t.date] = []; byDate[t.date].push(t); });
+  const dates = Object.keys(byDate).sort();
+
+  let greenStreak=0, ruleStreak=0, bestGreen=0, bestRule=0, curGreen=0, curRule=0;
+  dates.forEach(d => {
+    const trades = byDate[d];
+    const dayPnl = trades.reduce((a,t)=>a+t.pnl,0);
+    const markers = trades.flatMap(t=>t.dayMarkers||[]);
+    const isGreen = dayPnl > 0;
+    const rulesOk = markers.includes('rule-y') && !markers.includes('rule-n');
+    curGreen = isGreen ? curGreen+1 : 0;
+    curRule  = rulesOk  ? curRule+1  : 0;
+    if(curGreen > bestGreen) bestGreen = curGreen;
+    if(curRule  > bestRule)  bestRule  = curRule;
+  });
+  greenStreak = curGreen; ruleStreak = curRule;
+
+  // Current losing streak
+  let curLoss=0;
+  for(let i=dates.length-1;i>=0;i--) {
+    const dayPnl = byDate[dates[i]].reduce((a,t)=>a+t.pnl,0);
+    if(dayPnl < 0) curLoss++; else break;
+  }
+
+  return { greenStreak, ruleStreak, bestGreen, bestRule, curLoss };
+}
+
+function renderStreaks() {
+  const el = document.getElementById('streak-row');
+  if(!el) return;
+  if(!S.trades.length) { el.innerHTML=''; return; }
+  const s = calcStreaks();
+
+  const card = (icon, label, val, sub, color) => `
+    <div class="stat">
+      <div class="stat-label">${label}</div>
+      <div class="stat-val" style="color:${color};display:flex;align-items:baseline;gap:6px">
+        <span style="font-size:18px">${icon}</span>${val}
+      </div>
+      <div class="stat-sub">${sub}</div>
+    </div>`;
+
+  el.innerHTML =
+    card('🔥', 'Green Day Streak', s.greenStreak + ' days', 'Best ever: ' + s.bestGreen, 'var(--green)') +
+    card('📋', 'Rules Streak',     s.ruleStreak  + ' days', 'Best ever: ' + s.bestRule,  'var(--blue)') +
+    card('📉', 'Current Loss Run', s.curLoss + ' days',     s.curLoss>=3?'⚠ Consider a break':'Looking good', s.curLoss>=3?'var(--red)':'var(--text)') +
+    card('🏆', 'Best Green Streak',s.bestGreen   + ' days', 'All time personal best',  'var(--gold)');
+}
+
+// ── DRAWDOWN HEATMAP ──────────────────────────────────────────────────────────
+let hmY = new Date().getFullYear(), hmM = new Date().getMonth();
+
+function hmNav(d) { hmM+=d; if(hmM>11){hmM=0;hmY++;} if(hmM<0){hmM=11;hmY--;} renderHeatmap(); }
+
+function renderHeatmap() {
+  const hmLabel = document.getElementById('hm-label');
+  const hmGrid  = document.getElementById('hm-grid');
+  if(!hmLabel||!hmGrid) return;
+  hmLabel.textContent = MONTHS[hmM] + ' ' + hmY;
+
+  const acctSize  = parseFloat(document.getElementById('hm-account-size')?.value) || 50000;
+  const maxDDPct  = parseFloat(document.getElementById('hm-max-dd')?.value) || 5;
+  const maxDDDollar = acctSize * maxDDPct / 100;
+
+  // Build day P&L map
+  const dayPnl = {};
+  S.trades.forEach(t => {
+    if(!dayPnl[t.date]) dayPnl[t.date] = 0;
+    dayPnl[t.date] += t.pnl;
+  });
+
+  const first = new Date(hmY, hmM, 1).getDay();
+  const days  = new Date(hmY, hmM+1, 0).getDate();
+  const todayStr = today();
+
+  let html = DOW.map(d=>`<div class="cal-day-lbl">${d}</div>`).join('');
+  for(let i=0;i<first;i++) html+=`<div class="cal-cell empty"></div>`;
+
+  for(let d=1;d<=days;d++) {
+    const dk = hmY+'-'+String(hmM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const pnl = dayPnl[dk];
+    const isToday = dk===todayStr;
+    let bg='', txtColor='var(--text3)', tooltip='', borderColor='transparent';
+
+    if(pnl !== undefined) {
+      const loss = Math.min(0, pnl); // negative means loss
+      const severity = Math.abs(loss) / maxDDDollar; // 0–1
+      if(pnl > 0) {
+        const intensity = Math.min(pnl / (maxDDDollar*0.5), 1);
+        bg = `rgba(57,196,122,${0.1 + intensity*0.25})`;
+        txtColor = 'var(--green)';
+        tooltip = '+$' + pnl.toFixed(0);
+      } else if(pnl < 0) {
+        if(severity < 0.4)       { bg=`rgba(212,168,75,${0.15+severity*0.4})`; txtColor='var(--gold)'; }
+        else if(severity < 0.75) { bg=`rgba(240,90,110,${0.2+severity*0.4})`; txtColor='var(--red)'; }
+        else                     { bg=`rgba(240,90,110,${0.6+severity*0.3})`; txtColor='#fff'; borderColor='var(--red)'; }
+        tooltip = '$' + pnl.toFixed(0) + ' (' + (severity*100).toFixed(0) + '% of limit)';
+      }
+    }
+    if(isToday) borderColor='var(--gold)';
+
+    html += `<div class="cal-cell ${pnl!==undefined?'has-data':''}" title="${tooltip}"
+      style="background:${bg};border-color:${borderColor}">
+      <span class="day-num" style="color:${isToday?'var(--gold)':txtColor}">${d}</span>
+      ${pnl!==undefined?`<div style="font-family:var(--mono);font-size:8px;color:${txtColor};margin-top:1px">${pnl>0?'+':''}${Math.round(pnl)}</div>`:''}
+    </div>`;
+  }
+  hmGrid.innerHTML = `<div class="cal-days">${html}</div>`;
+}
+
+// ── WEEKLY REVIEW ─────────────────────────────────────────────────────────────
+function getWeekTrades() {
+  const now = new Date();
+  const dow = now.getDay();
+  const monday = new Date(now); monday.setDate(now.getDate() - (dow===0?6:dow-1)); monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  return S.trades.filter(t => { const d=new Date(t.date+'T00:00:00'); return d>=monday && d<=sunday; });
+}
+
+function renderWeeklyReview() {
+  const el = document.getElementById('wr-stats');
+  const replayEl = document.getElementById('wr-replays');
+  const wrLabel = document.getElementById('wr-week-label');
+  if(!el) return;
+
+  const now = new Date();
+  const dow = now.getDay();
+  const monday = new Date(now); monday.setDate(now.getDate() - (dow===0?6:dow-1));
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+  if(wrLabel) wrLabel.textContent = monday.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' + sunday.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  const wt = getWeekTrades();
+  if(!wt.length) {
+    el.innerHTML=`<div style="font-family:var(--mono);font-size:11px;color:var(--text3);grid-column:1/-1">No trades this week yet</div>`;
+    if(replayEl) replayEl.innerHTML='';
+    return;
+  }
+
+  const k = kpis(wt);
+  el.innerHTML = `
+    <div><div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Trades</div><div style="font-family:var(--mono);font-size:18px;font-weight:500">${k.total}</div></div>
+    <div><div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Net P&L</div><div style="font-family:var(--mono);font-size:18px;font-weight:500;color:${k.totalPnl>=0?'var(--green)':'var(--red)'}">${fmtPnl(k.totalPnl)}</div></div>
+    <div><div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Win Rate</div><div style="font-family:var(--mono);font-size:18px;font-weight:500">${Math.round(k.winRate*100)}%</div></div>
+    <div><div style="font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Avg R</div><div style="font-family:var(--mono);font-size:18px;font-weight:500;color:${k.avgR>=0?'var(--green)':'var(--red)'}">${fmtR(k.avgR)}</div></div>
+  `;
+
+  // Show replay notes from this week
+  const withReplay = wt.filter(t=>t.replay && t.replay.trim());
+  if(replayEl) {
+    if(withReplay.length) {
+      replayEl.innerHTML = `
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">▶ Replay Notes This Week</div>
+        ${withReplay.map(t=>`
+          <div style="padding:10px 14px;background:var(--bg2);border-left:2px solid var(--gold);border-radius:0 6px 6px 0;margin-bottom:8px">
+            <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:4px">${t.date} · ${esc(t.instrument)} · ${t.direction} · <span style="color:${t.pnl>=0?'var(--green)':'var(--red)'}">${fmtPnl(t.pnl)}</span></div>
+            <div style="font-family:var(--body);font-size:12px;color:var(--text2);line-height:1.5">${esc(t.replay)}</div>
+          </div>`).join('')}`;
+    } else {
+      replayEl.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:8px">No replay notes this week. Add them when logging trades to unlock AI coaching.</div>`;
+    }
+  }
+}
+
+async function generateWeeklyReview() {
+  const btn = document.getElementById('wr-gen-btn');
+  const area = document.getElementById('wr-ai-area');
+  if(!area) return;
+  const wt = getWeekTrades();
+  if(!wt.length) { showToast('No trades this week to review'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+  area.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--text3);padding:12px 0">Analysing your week…</div>`;
+
+  const k = kpis(wt);
+  const replayNotes = wt.filter(t=>t.replay).map(t=>`${t.date} ${t.instrument} ${t.direction} P&L:${t.pnl} — REPLAY: ${t.replay}`).join('\n');
+  const summary = `Week: ${wt.length} trades, ${fmtPnl(k.totalPnl)}, ${Math.round(k.winRate*100)}% win rate, avg R: ${fmtR(k.avgR)}.
+Emotions: ${[...new Set(wt.map(t=>t.emotion).filter(Boolean))].join(', ')||'not logged'}.
+Strategies: ${[...new Set(wt.map(t=>t.strategy).filter(Boolean))].join(', ')||'not logged'}.
+${replayNotes ? 'Replay notes:\n'+replayNotes : 'No replay notes logged.'}
+All-time: ${S.trades.length} trades, ${fmtPnl(kpis(S.trades).totalPnl)} total P&L.`;
+
+  try {
+    const resp = await fetch('/api/analyze', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ messages:[{role:'user',content:`You are a prop firm trading coach reviewing a trader's week. Be direct, specific, and actionable. Under 200 words. Format with short paragraphs — no bullet lists.\n\n${summary}\n\nGive: (1) what went well, (2) the main pattern to fix next week, (3) one specific challenge or question for them to reflect on.`}] })
+    });
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || 'Could not generate review.';
+    area.innerHTML = `
+      <div style="border-top:1px solid var(--line);padding-top:14px;margin-top:4px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:6px;height:6px;border-radius:50%;background:var(--gold)"></div>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">AI Coach · Week Review</span>
+        </div>
+        <div style="font-family:var(--body);font-size:13px;color:var(--text2);line-height:1.7;white-space:pre-wrap">${esc(text)}</div>
+      </div>`;
+  } catch(e) {
+    area.innerHTML = `<div style="font-family:var(--mono);font-size:11px;color:var(--red)">Review failed — check your API connection</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Ask AI Coach`;
+}
+
+// ── CHALLENGE TRACKER ─────────────────────────────────────────────────────────
+let challenges = JSON.parse(localStorage.getItem('ew-challenges')||'[]');
+let editChallengeId = null;
+
+function saveChallenges() { localStorage.setItem('ew-challenges', JSON.stringify(challenges)); }
+
+function openChallengeModal(id=null) {
+  editChallengeId = id;
+  const ch = id ? challenges.find(c=>c.id===id) : null;
+  document.getElementById('ch-modal-title').textContent = ch ? 'Edit Account' : 'Add Account';
+  document.getElementById('ch-firm').value      = ch?.firm||'';
+  document.getElementById('ch-size').value      = ch?.size||'';
+  document.getElementById('ch-phase').value     = ch?.phase||'eval1';
+  document.getElementById('ch-start').value     = ch?.start||today();
+  document.getElementById('ch-target').value    = ch?.target||'';
+  document.getElementById('ch-daily-loss').value= ch?.dailyLoss||'';
+  document.getElementById('ch-max-dd').value    = ch?.maxDD||'';
+  document.getElementById('ch-min-days').value  = ch?.minDays||'';
+  document.getElementById('ch-label').value     = ch?.label||'';
+  document.getElementById('challenge-modal-overlay').classList.add('open');
+}
+function closeChallengeModal() { document.getElementById('challenge-modal-overlay').classList.remove('open'); }
+document.getElementById('challenge-modal-overlay').addEventListener('click', e=>{ if(e.target===document.getElementById('challenge-modal-overlay')) closeChallengeModal(); });
+
+function saveChallenge() {
+  const firm = document.getElementById('ch-firm').value;
+  if(!firm) { showToast('Select a firm'); return; }
+  const ch = {
+    id: editChallengeId || Date.now(),
+    firm, label: document.getElementById('ch-label').value,
+    size:      parseFloat(document.getElementById('ch-size').value)||0,
+    phase:     document.getElementById('ch-phase').value,
+    start:     document.getElementById('ch-start').value||today(),
+    target:    parseFloat(document.getElementById('ch-target').value)||0,
+    dailyLoss: parseFloat(document.getElementById('ch-daily-loss').value)||0,
+    maxDD:     parseFloat(document.getElementById('ch-max-dd').value)||0,
+    minDays:   parseInt(document.getElementById('ch-min-days').value)||0,
+  };
+  if(editChallengeId) challenges = challenges.map(c=>c.id===editChallengeId?ch:c);
+  else challenges.push(ch);
+  saveChallenges();
+  closeChallengeModal();
+  renderChallenges();
+  showToast('Account saved ✓');
+}
+
+function deleteChallenge(id) {
+  if(!confirm('Remove this account?')) return;
+  challenges = challenges.filter(c=>c.id!==id);
+  saveChallenges();
+  renderChallenges();
+  showToast('Removed');
+}
+
+function renderChallenges() {
+  const grid  = document.getElementById('challenges-grid');
+  const empty = document.getElementById('challenges-empty');
+  if(!grid) return;
+  if(!challenges.length) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const phaseLabel = {eval1:'Phase 1',eval2:'Phase 2',funded:'Funded',paused:'Paused'};
+  const phaseColor = {eval1:'var(--blue)',eval2:'var(--gold)',funded:'var(--green)',paused:'var(--text3)'};
+
+  grid.innerHTML = challenges.map(ch => {
+    // Get trades for this account
+    const acctTrades = S.trades.filter(t => t.account && t.account.toLowerCase().includes(ch.firm.toLowerCase()));
+    const pnl = acctTrades.reduce((a,t)=>a+t.pnl,0);
+    const tradingDays = new Set(acctTrades.map(t=>t.date)).size;
+
+    // Progress bars
+    const targetPct  = ch.target  ? Math.min(Math.max(pnl,0)/ch.target*100,100)   : null;
+    const ddPct      = ch.maxDD   ? Math.min(Math.abs(Math.min(pnl,0))/ch.maxDD*100,100) : null;
+    const daysPct    = ch.minDays ? Math.min(tradingDays/ch.minDays*100,100)       : null;
+
+    // Days since start
+    const startDate  = new Date(ch.start+'T00:00:00');
+    const daysSince  = Math.floor((new Date()-startDate)/864e5);
+
+    const bar = (label, pct, color, val) => pct!==null ? `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:4px">
+          <span>${label}</span><span style="color:${color}">${val}</span>
+        </div>
+        <div style="height:4px;background:var(--line);border-radius:2px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:2px;transition:width .3s"></div>
+        </div>
+      </div>` : '';
+
+    return `<div class="card" style="position:relative">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <div style="font-family:var(--serif);font-size:17px;font-weight:400">${esc(ch.firm)}</div>
+            <div style="padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:600;background:rgba(100,146,240,.1);color:${phaseColor[ch.phase]||'var(--text3)'}">${phaseLabel[ch.phase]||ch.phase}</div>
+          </div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">${ch.label||('$'+ch.size.toLocaleString())} · Day ${daysSince}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button onclick="openChallengeModal(${ch.id})" style="width:26px;height:26px;border-radius:6px;background:var(--bg2);border:1px solid var(--line);cursor:pointer;color:var(--text3);display:flex;align-items:center;justify-content:center;transition:all .15s" title="Edit">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button onclick="deleteChallenge(${ch.id})" style="width:26px;height:26px;border-radius:6px;background:var(--bg2);border:1px solid var(--line);cursor:pointer;color:var(--red);display:flex;align-items:center;justify-content:center;transition:all .15s" title="Delete">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Current P&L -->
+      <div style="padding:10px 14px;background:var(--bg2);border-radius:8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">P&L vs Target</div>
+        <div style="font-family:var(--mono);font-size:16px;font-weight:500;color:${pnl>=0?'var(--green)':'var(--red)'}">${fmtPnl(pnl)}</div>
+      </div>
+
+      ${bar('Profit Target', targetPct, 'var(--green)', ch.target?('$'+Math.max(0,pnl).toFixed(0)+' / $'+ch.target.toLocaleString()):'')}
+      ${bar('Drawdown Used', ddPct, ddPct&&ddPct>75?'var(--red)':ddPct&&ddPct>40?'var(--gold)':'var(--blue)', ch.maxDD?('$'+Math.abs(Math.min(pnl,0)).toFixed(0)+' / $'+ch.maxDD.toLocaleString()):'')}
+      ${bar('Trading Days', daysPct, 'var(--gold)', ch.minDays?(tradingDays+' / '+ch.minDays+' days'):'')}
+
+      <div style="display:flex;gap:8px;margin-top:4px;font-family:var(--mono);font-size:10px;color:var(--text3)">
+        ${ch.dailyLoss?`<div style="flex:1;padding:6px 8px;background:var(--bg2);border-radius:6px">Daily limit<br/><span style="color:var(--text)">$${ch.dailyLoss.toLocaleString()}</span></div>`:''}
+        ${acctTrades.length?`<div style="flex:1;padding:6px 8px;background:var(--bg2);border-radius:6px">Trades logged<br/><span style="color:var(--text)">${acctTrades.length}</span></div>`:''}
+        ${ch.start?`<div style="flex:1;padding:6px 8px;background:var(--bg2);border-radius:6px">Started<br/><span style="color:var(--text)">${ch.start}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Wire all new features into renderPage ─────────────────────────────────────
 
 // ── CSV Import ────────────────────────────────────────────────────────────────
 const IMP_FIRM_PRESETS = {
@@ -2160,10 +2706,51 @@ function impReset() {
   impGoStep(1);
 }
 
-// Wire import into renderPage
-const _origRenderPage = renderPage;
-// Extend renderPage to handle import tab (it's static HTML, no JS render needed)
+// ── More dropdown (desktop) ───────────────────────────────────────────────────
+function toggleMoreMenu(e) {
+  e.stopPropagation();
+  document.getElementById('nav-more-menu').classList.toggle('open');
+}
+function navMoreGo(page) {
+  document.getElementById('nav-more-menu').classList.remove('open');
+  // deactivate all nav tabs, activate More btn visually
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.nav-more-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-more-btn').classList.add('active');
+  const item = document.querySelector(`.nav-more-item[data-page="${page}"]`);
+  if(item) item.classList.add('active');
+  document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  activeTab = page; renderPage(page);
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('nav-more-menu');
+  if(menu && !e.target.closest('.nav-more-wrap')) menu.classList.remove('open');
+});
 
+// ── Mobile More sheet ─────────────────────────────────────────────────────────
+function toggleMobileMore() {
+  const sheet = document.getElementById('mobile-more-sheet');
+  const overlay = document.getElementById('mobile-more-overlay');
+  const isOpen = sheet.style.display !== 'none';
+  sheet.style.display = isOpen ? 'none' : 'block';
+  overlay.style.display = isOpen ? 'none' : 'block';
+}
+function closeMobileMore() {
+  document.getElementById('mobile-more-sheet').style.display = 'none';
+  document.getElementById('mobile-more-overlay').style.display = 'none';
+}
+function mobileMoreGo(page) {
+  closeMobileMore();
+  document.querySelectorAll('.mobile-nav-btn[data-page]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  activeTab = page; renderPage(page);
+}
+
+// ── Challenges are localStorage-backed — init immediately on page load
+renderChallenges();
 
 
 // On mobile: convert date/time inputs to type=text to avoid iOS native oversized chrome

@@ -488,7 +488,17 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
 .ai-analyze-btn { flex-shrink: 0; }
 
 
-.mobile-nav { display: none; }
+/* ─── Import ──────────────────────────────────────────────────────────── */
+.imp-step.active { color: var(--gold) !important; background: rgba(212,168,75,.06) !important; }
+.imp-step.done { color: var(--text) !important; }
+.imp-step.done .imp-step-num { background: var(--gold) !important; border-color: var(--gold) !important; color: #120e00 !important; }
+.imp-firm-btn:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
+.imp-firm-btn.sel { border-color: var(--gold) !important; background: rgba(212,168,75,.08) !important; color: var(--gold) !important; }
+.imp-map-select { width:100%; background:var(--bg2); border:1px solid var(--line2); border-radius:6px; color:var(--text); font-family:var(--mono); font-size:12px; padding:7px 10px; cursor:pointer; outline:none; transition:border-color .15s; }
+.imp-map-select:focus { border-color: var(--gold); }
+.imp-map-select.mapped { border-color: rgba(57,196,122,.4); color: var(--green); }
+
+
 
 
 /* ─── Responsive ──────────────────────────────────────────────────────── */
@@ -698,6 +708,7 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
       <button class="nav-tab" data-page="analytics">Analytics</button>
       <button class="nav-tab" data-page="ai">AI Coach</button>
       <button class="nav-tab" data-page="reports">Reports</button>
+      <button class="nav-tab" data-page="import">Import</button>
     </div>
     <div class="nav-right" style="position:relative">
       <button class="btn-log" onclick="openModal()">+ Log trade</button>
@@ -856,6 +867,145 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
         <div class="card-title">Rule Compliance</div>
         <div class="card-sub">Performance when rules are followed vs broken</div>
         <div id="rule-report" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- Import -->
+    <div class="page" id="page-import">
+      <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:24px">
+        <div>
+          <h1>Import Trades</h1>
+          <p>Load trade history from your prop firm CSV export</p>
+        </div>
+      </div>
+
+      <!-- Step indicator -->
+      <div id="imp-steps" style="display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:28px">
+        <div class="imp-step active" data-s="1" style="flex:1;padding:11px 16px;background:var(--bg1);border-right:1px solid var(--line);display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--mono);color:var(--text3);transition:all .2s">
+          <div class="imp-step-num" style="width:20px;height:20px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">1</div>Select Firm
+        </div>
+        <div class="imp-step" data-s="2" style="flex:1;padding:11px 16px;background:var(--bg1);border-right:1px solid var(--line);display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--mono);color:var(--text3);transition:all .2s">
+          <div class="imp-step-num" style="width:20px;height:20px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">2</div>Upload CSV
+        </div>
+        <div class="imp-step" data-s="3" style="flex:1;padding:11px 16px;background:var(--bg1);border-right:1px solid var(--line);display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--mono);color:var(--text3);transition:all .2s">
+          <div class="imp-step-num" style="width:20px;height:20px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">3</div>Map Columns
+        </div>
+        <div class="imp-step" data-s="4" style="flex:1;padding:11px 16px;background:var(--bg1);display:flex;align-items:center;gap:10px;font-size:11px;font-family:var(--mono);color:var(--text3);transition:all .2s">
+          <div class="imp-step-num" style="width:20px;height:20px;border-radius:50%;border:1px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">4</div>Preview &amp; Import
+        </div>
+      </div>
+
+      <!-- Step 1: Firm -->
+      <div class="imp-panel card active" id="imp-p1">
+        <div class="card-title">Which prop firm are you importing from?</div>
+        <div class="card-sub">We'll pre-map column names automatically</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:16px;margin-bottom:24px" id="imp-firm-grid">
+          <button class="imp-firm-btn" data-firm="ftmo" onclick="impSelectFirm('ftmo',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">🏆</div>FTMO
+          </button>
+          <button class="imp-firm-btn" data-firm="fundednext" onclick="impSelectFirm('fundednext',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">⚡</div>FundedNext
+          </button>
+          <button class="imp-firm-btn" data-firm="apex" onclick="impSelectFirm('apex',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">🔺</div>Apex Trader
+          </button>
+          <button class="imp-firm-btn" data-firm="topstep" onclick="impSelectFirm('topstep',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">📈</div>Topstep
+          </button>
+          <button class="imp-firm-btn" data-firm="tradelocker" onclick="impSelectFirm('tradelocker',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">🔒</div>TradeLocker
+          </button>
+          <button class="imp-firm-btn" data-firm="mt4" onclick="impSelectFirm('mt4',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">📊</div>MT4 / MT5
+          </button>
+          <button class="imp-firm-btn" data-firm="e8" onclick="impSelectFirm('e8',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">8️⃣</div>E8 Funding
+          </button>
+          <button class="imp-firm-btn" data-firm="generic" onclick="impSelectFirm('generic',this)" style="padding:14px 10px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;color:var(--text);font-family:var(--body);font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s">
+            <div style="font-size:20px;margin-bottom:5px">📂</div>Other / Generic
+          </button>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+          <button class="btn-save" id="imp-btn1" disabled onclick="impGoStep(2)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Upload -->
+      <div class="imp-panel card" id="imp-p2" style="display:none">
+        <div class="card-title">Upload your trade history CSV</div>
+        <div class="card-sub" id="imp-hint">Export from your prop firm dashboard, then drop it below</div>
+        <div id="imp-dropzone" onclick="document.getElementById('imp-file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--gold)'" ondragleave="this.style.borderColor='var(--line2)'" ondrop="impHandleDrop(event)" style="border:2px dashed var(--line2);border-radius:10px;padding:40px 24px;text-align:center;cursor:pointer;margin:20px 0;transition:border-color .2s">
+          <input type="file" id="imp-file-input" accept=".csv,.txt" style="display:none" onchange="impHandleFile(this.files[0])"/>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" style="margin:0 auto 10px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="font-family:var(--body);font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Drop your CSV here</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">.csv or .txt — click to browse</div>
+        </div>
+        <div id="imp-file-info" style="display:none;padding:12px 16px;background:rgba(212,168,75,.06);border:1px solid rgba(212,168,75,.2);border-radius:8px;margin-bottom:16px;display:none;align-items:center;gap:12px">
+          <span style="font-size:22px">📄</span>
+          <div>
+            <div id="imp-file-name" style="font-family:var(--mono);font-size:12px;color:var(--gold)"></div>
+            <div id="imp-file-meta" style="font-size:11px;color:var(--text3);margin-top:2px"></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px">
+          <button class="btn-cancel" onclick="impGoStep(1)">← Back</button>
+          <button class="btn-save" id="imp-btn2" disabled onclick="impBuildMapper();impGoStep(3)">Map Columns →</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Map -->
+      <div class="imp-panel card" id="imp-p3" style="display:none">
+        <div class="card-title">Map your CSV columns</div>
+        <div class="card-sub">Match your file's columns to Edgewise fields — <span style="color:var(--gold)">●</span> required &nbsp;<span style="color:var(--text3)">●</span> optional</div>
+        <div style="margin-top:20px;border:1px solid var(--line);border-radius:8px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:1.2fr 1.4fr 1fr;background:var(--bg2)">
+            <div style="padding:9px 14px;font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;border-right:1px solid var(--line)">Edgewise Field</div>
+            <div style="padding:9px 14px;font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;border-right:1px solid var(--line)">Your CSV Column</div>
+            <div style="padding:9px 14px;font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Sample Value</div>
+          </div>
+          <div id="imp-mapper-rows"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:20px">
+          <button class="btn-cancel" onclick="impGoStep(2)">← Back</button>
+          <button class="btn-save" onclick="impBuildPreview()">Preview Trades →</button>
+        </div>
+      </div>
+
+      <!-- Step 4: Preview -->
+      <div class="imp-panel card" id="imp-p4" style="display:none">
+        <div class="card-title">Review before importing</div>
+        <div class="card-sub" id="imp-preview-sub"></div>
+        <div id="imp-stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0"></div>
+        <div style="overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin-bottom:16px">
+          <table class="tbl" id="imp-preview-tbl">
+            <thead id="imp-preview-thead"></thead>
+            <tbody id="imp-preview-tbody"></tbody>
+          </table>
+        </div>
+        <div id="imp-warn" style="display:none;padding:10px 14px;background:rgba(240,90,110,.08);border:1px solid rgba(240,90,110,.2);border-radius:7px;font-family:var(--mono);font-size:12px;color:var(--red);margin-bottom:12px"></div>
+        <div id="imp-progress" style="display:none;margin-bottom:16px">
+          <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:6px">
+            <span id="imp-prog-label">Importing...</span><span id="imp-prog-pct">0%</span>
+          </div>
+          <div style="height:3px;background:var(--line);border-radius:2px;overflow:hidden">
+            <div id="imp-prog-fill" style="height:100%;background:var(--gold);border-radius:2px;transition:width .3s;width:0%"></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <button class="btn-cancel" onclick="impGoStep(3)">← Back</button>
+          <button class="btn-save" id="imp-btn4" onclick="impDoImport()">Import to Journal ✓</button>
+        </div>
+      </div>
+
+      <!-- Step 5: Done -->
+      <div class="imp-panel card" id="imp-p5" style="display:none;text-align:center;padding:48px 32px">
+        <div style="font-size:48px;margin-bottom:16px">✅</div>
+        <div style="font-family:var(--serif);font-size:22px;font-weight:300;margin-bottom:8px;letter-spacing:1px">Import Complete</div>
+        <div id="imp-success-msg" style="font-family:var(--mono);font-size:12px;color:var(--text3);margin-bottom:28px"></div>
+        <div style="display:flex;gap:10px;justify-content:center">
+          <button class="btn-cancel" onclick="impReset()">Import More</button>
+          <button class="btn-save" onclick="document.querySelector('.nav-tab[data-page=journal]').click()">View Journal →</button>
+        </div>
       </div>
     </div>
 
@@ -1710,7 +1860,311 @@ function mobileNav(btn, page) {
   renderPage(page);
 }
 
-window.addEventListener('resize',()=>{ if(activeTab==='dashboard') drawEquity(); });
+// ── CSV Import ────────────────────────────────────────────────────────────────
+const IMP_FIRM_PRESETS = {
+  ftmo: {
+    hint: 'Export: FTMO Client Area → Trading History → Export CSV',
+    map: { open_time:'Time', close_time:'Time.1', symbol:'Symbol', type:'Type', lots:'Volume', open_price:'Price', close_price:'Price.1', sl:'S/L', tp:'T/P', pnl:'Profit', swap:'Swap', commission:'Commission', comment:'Comment' }
+  },
+  fundednext: {
+    hint: 'Export: FundedNext Dashboard → History → Download CSV',
+    map: { open_time:'Open Time', close_time:'Close Time', symbol:'Symbol', type:'Action', lots:'Size', open_price:'Open Price', close_price:'Close Price', sl:'SL', tp:'TP', pnl:'Profit' }
+  },
+  tradelocker: {
+    hint: 'Export: TradeLocker → Reports → Closed Positions → Export',
+    map: { open_time:'Open time', close_time:'Close time', symbol:'Instrument', type:'Side', lots:'Qty', open_price:'Open price', close_price:'Close price', sl:'SL', tp:'TP', pnl:'Net P&L' }
+  },
+  mt4: {
+    hint: 'Export: MT4/5 Account History → right-click → Save as Detailed Report',
+    map: { open_time:'Open Time', close_time:'Close Time', symbol:'Symbol', type:'Type', lots:'Size', open_price:'Open Price', close_price:'Close Price', sl:'S/L', tp:'T/P', pnl:'Profit', swap:'Swap', commission:'Commission' }
+  },
+  apex: {
+    hint: 'Export: Apex Dashboard → Trade History → Export',
+    map: { open_time:'Entry Time', close_time:'Exit Time', symbol:'Symbol', type:'Direction', lots:'Contracts', open_price:'Entry Price', close_price:'Exit Price', pnl:'P&L' }
+  },
+  topstep: {
+    hint: 'Export: Topstep Dashboard → Activity → Export',
+    map: { open_time:'Entry Time', close_time:'Exit Time', symbol:'Contract', type:'Side', lots:'Qty', open_price:'Entry', close_price:'Exit', pnl:'P&L' }
+  },
+  e8: {
+    hint: 'Export: E8 Dashboard → Trading History → Download',
+    map: { open_time:'Open Time', close_time:'Close Time', symbol:'Symbol', type:'Type', lots:'Volume', open_price:'Open Price', close_price:'Close Price', pnl:'Profit' }
+  },
+  generic: {
+    hint: 'Manually match your CSV columns to Edgewise fields below.',
+    map: {}
+  }
+};
+
+const IMP_FIELDS = [
+  { key:'open_time',   label:'Open Time / Date', required:true },
+  { key:'close_time',  label:'Close Time',        required:false },
+  { key:'symbol',      label:'Symbol / Instrument',required:true },
+  { key:'type',        label:'Direction (Buy/Sell)',required:true },
+  { key:'lots',        label:'Lot Size / Contracts',required:false },
+  { key:'open_price',  label:'Open Price',        required:false },
+  { key:'close_price', label:'Close Price',        required:false },
+  { key:'pnl',         label:'Net P&L ($)',        required:true },
+  { key:'sl',          label:'Stop Loss',          required:false },
+  { key:'tp',          label:'Take Profit',        required:false },
+  { key:'swap',        label:'Swap',               required:false },
+  { key:'commission',  label:'Commission',         required:false },
+  { key:'comment',     label:'Comment / Notes',    required:false },
+];
+
+let impStep = 1, impFirm = null, impHeaders = [], impRows = [], impMappings = {};
+
+function impSelectFirm(key, el) {
+  document.querySelectorAll('.imp-firm-btn').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  impFirm = key;
+  document.getElementById('imp-btn1').disabled = false;
+}
+
+function impGoStep(n) {
+  // Update panels
+  for(let i=1;i<=5;i++) {
+    const p = document.getElementById('imp-p'+i);
+    if(p) p.style.display = i===n ? 'block' : 'none';
+  }
+  // Update step indicators
+  document.querySelectorAll('.imp-step').forEach((el, i) => {
+    el.classList.remove('active','done');
+    if(i+1 === n) el.classList.add('active');
+    else if(i+1 < n) el.classList.add('done');
+  });
+  impStep = n;
+}
+
+function impHandleFile(file) {
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    impParseCSV(e.target.result);
+    const fi = document.getElementById('imp-file-info');
+    fi.style.display = 'flex';
+    document.getElementById('imp-file-name').textContent = file.name;
+    document.getElementById('imp-file-meta').textContent = impRows.length + ' rows detected · ' + (file.size/1024).toFixed(1) + ' KB';
+    document.getElementById('imp-btn2').disabled = false;
+    // Apply preset hint
+    const preset = IMP_FIRM_PRESETS[impFirm];
+    if(preset) document.getElementById('imp-hint').textContent = preset.hint;
+    impMappings = { ...(preset?.map || {}) };
+  };
+  reader.readAsText(file);
+}
+
+function impHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('imp-dropzone').style.borderColor = 'var(--line2)';
+  const file = e.dataTransfer.files[0];
+  if(file) impHandleFile(file);
+}
+
+function impParseCSV(text) {
+  const lines = text.trim().split('\n');
+  // Handle quoted CSV fields
+  function parseLine(line) {
+    const result = []; let cur = '', inQ = false;
+    for(let i=0;i<line.length;i++) {
+      const c = line[i];
+      if(c==='"') { inQ=!inQ; continue; }
+      if(c===',' && !inQ) { result.push(cur.trim()); cur=''; continue; }
+      cur += c;
+    }
+    result.push(cur.trim());
+    return result;
+  }
+  impHeaders = parseLine(lines[0]);
+  impRows = lines.slice(1).filter(l=>l.trim()).map(line => {
+    const vals = parseLine(line);
+    const obj = {};
+    impHeaders.forEach((h,i) => obj[h] = vals[i]||'');
+    return obj;
+  });
+}
+
+function impBuildMapper() {
+  const container = document.getElementById('imp-mapper-rows');
+  container.innerHTML = '';
+  IMP_FIELDS.forEach(field => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:1.2fr 1.4fr 1fr;border-top:1px solid var(--line)';
+
+    const nameCell = document.createElement('div');
+    nameCell.style.cssText = 'padding:9px 14px;display:flex;align-items:center;gap:8px;border-right:1px solid var(--line)';
+    nameCell.innerHTML = `<div style="width:5px;height:5px;border-radius:50%;background:${field.required?'var(--gold)':'var(--text3)'};flex-shrink:0"></div>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text)">${field.label}</span>`;
+
+    const selectCell = document.createElement('div');
+    selectCell.style.cssText = 'padding:7px 10px;border-right:1px solid var(--line)';
+    const sel = document.createElement('select');
+    sel.className = 'imp-map-select';
+    sel.id = 'imp-map-'+field.key;
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = field.required ? '— select —' : '— skip —';
+    sel.appendChild(blank);
+    impHeaders.forEach(h => {
+      const opt = document.createElement('option');
+      opt.value = h; opt.textContent = h; sel.appendChild(opt);
+    });
+    const preset = impMappings[field.key];
+    if(preset && impHeaders.includes(preset)) { sel.value = preset; sel.classList.add('mapped'); }
+    sel.addEventListener('change', () => {
+      impMappings[field.key] = sel.value;
+      sel.classList.toggle('mapped', !!sel.value);
+      updateSampleCell(field.key, sel.value, sampleCell);
+    });
+    selectCell.appendChild(sel);
+
+    const sampleCell = document.createElement('div');
+    sampleCell.style.cssText = 'padding:9px 14px;font-family:var(--mono);font-size:11px;color:var(--text2)';
+    sampleCell.id = 'imp-sample-'+field.key;
+    if(preset && impHeaders.includes(preset)) updateSampleCell(field.key, preset, sampleCell);
+
+    row.appendChild(nameCell); row.appendChild(selectCell); row.appendChild(sampleCell);
+    container.appendChild(row);
+  });
+}
+
+function updateSampleCell(key, col, cell) {
+  cell.textContent = col ? (impRows[0]?.[col] || '—') : '';
+}
+
+function impBuildPreview() {
+  const missing = IMP_FIELDS.filter(f => f.required && !impMappings[f.key]);
+  const warn = document.getElementById('imp-warn');
+  if(missing.length) {
+    warn.style.display = 'block';
+    warn.textContent = '⚠ Missing required fields: ' + missing.map(f=>f.label).join(', ');
+    return;
+  }
+  warn.style.display = 'none';
+
+  // Build preview trades
+  const parsed = impRows.map(row => impRowToTrade(row)).filter(Boolean);
+
+  // Stats
+  const totalPnl = parsed.reduce((a,t)=>a+t.pnl,0);
+  const wins = parsed.filter(t=>t.pnl>0).length;
+  document.getElementById('imp-stats-row').innerHTML = `
+    <div class="stat"><div class="stat-label">Trades</div><div class="stat-val">${parsed.length}</div></div>
+    <div class="stat"><div class="stat-label">Net P&L</div><div class="stat-val ${totalPnl>=0?'g':'r'}">${fmtPnl(totalPnl)}</div></div>
+    <div class="stat"><div class="stat-label">Win Rate</div><div class="stat-val">${parsed.length?Math.round(wins/parsed.length*100):0}%</div></div>
+    <div class="stat"><div class="stat-label">Avg P&L</div><div class="stat-val ${totalPnl>=0?'g':'r'}">${parsed.length?fmtPnl(totalPnl/parsed.length):'—'}</div></div>
+  `;
+  document.getElementById('imp-preview-sub').textContent = `Showing first 10 of ${parsed.length} trades — verify before importing`;
+
+  const preview = parsed.slice(0,10);
+  document.getElementById('imp-preview-thead').innerHTML = '<tr><th>Date</th><th>Symbol</th><th>Dir</th><th>Lots</th><th>P&L</th><th>Open</th><th>Close</th></tr>';
+  document.getElementById('imp-preview-tbody').innerHTML = preview.map(t => `
+    <tr>
+      <td>${esc(t.date)}</td>
+      <td class="td-main">${esc(t.instrument)}</td>
+      <td><span class="chip chip-${t.direction==='Long'?'long':'short'}">${t.direction}</span></td>
+      <td>${t.size||'—'}</td>
+      <td class="${t.pnl>=0?'td-pnl-pos':'td-pnl-neg'}">${fmtPnl(t.pnl)}</td>
+      <td>${t.openPrice||'—'}</td>
+      <td>${t.closePrice||'—'}</td>
+    </tr>
+  `).join('');
+
+  impGoStep(4);
+  // store for import
+  window._impParsed = parsed;
+}
+
+function impRowToTrade(row) {
+  const get = key => { const col = impMappings[key]; return col ? (row[col]||'') : ''; };
+  const pnlRaw = parseFloat(get('pnl').replace(/[^0-9.\-]/g,''));
+  if(isNaN(pnlRaw)) return null;
+
+  // Parse date from open_time
+  const rawDate = get('open_time');
+  let dateStr = today();
+  if(rawDate) {
+    const d = new Date(rawDate);
+    if(!isNaN(d)) dateStr = dkey(d);
+    else {
+      // Try common formats: DD.MM.YYYY, MM/DD/YYYY
+      const m = rawDate.match(/(\d{2})[.\/\-](\d{2})[.\/\-](\d{4})/);
+      if(m) dateStr = m[3]+'-'+m[2]+'-'+m[1];
+    }
+  }
+
+  // Parse direction
+  const rawType = get('type').toLowerCase();
+  let direction = 'Long';
+  if(rawType.includes('sell') || rawType.includes('short') || rawType === 's') direction = 'Short';
+
+  // Entry/exit times
+  const parseTime = s => { const m=s.match(/(\d{1,2}):(\d{2})/); return m ? m[1].padStart(2,'0')+':'+m[2] : ''; };
+
+  return {
+    id: Date.now() + Math.random(),
+    date: dateStr,
+    instrument: (get('symbol')||'Unknown').toUpperCase(),
+    direction,
+    size: parseFloat(get('lots'))||1,
+    entryTime: parseTime(get('open_time')),
+    exitTime: parseTime(get('close_time')),
+    openPrice: get('open_price'),
+    closePrice: get('close_price'),
+    pnl: pnlRaw,
+    risk: 0, r: 0, pnlPct: 0,
+    strategy: '', emotion: '', exec: 5,
+    reasoning: get('comment')||'',
+    notes: [get('swap')&&'Swap: '+get('swap'), get('commission')&&'Commission: '+get('commission')].filter(Boolean).join(' · '),
+    dayMarkers: pnlRaw > 0 ? ['win'] : pnlRaw < 0 ? ['loss'] : ['be'],
+    screenshots: [],
+    _imported: true
+  };
+}
+
+async function impDoImport() {
+  const trades = window._impParsed || [];
+  if(!trades.length) return;
+  const btn = document.getElementById('imp-btn4');
+  btn.disabled = true;
+  const prog = document.getElementById('imp-progress');
+  const fill = document.getElementById('imp-prog-fill');
+  const pct = document.getElementById('imp-prog-pct');
+  prog.style.display = 'block';
+
+  let done = 0;
+  for(const t of trades) {
+    S.trades.push(t);
+    if(window.saveTradeFB) await saveTradeFB(t);
+    done++;
+    const p = Math.round(done/trades.length*100);
+    fill.style.width = p+'%';
+    pct.textContent = p+'%';
+    document.getElementById('imp-prog-label').textContent = `Saving trade ${done} of ${trades.length}…`;
+    await new Promise(r => setTimeout(r, 30));
+  }
+
+  document.getElementById('imp-success-msg').textContent = trades.length + ' trades imported · ' + fmtPnl(trades.reduce((a,t)=>a+t.pnl,0)) + ' net P&L';
+  renderDashboard();
+  impGoStep(5);
+  showToast(trades.length + ' trades imported ✓');
+}
+
+function impReset() {
+  impFirm = null; impHeaders = []; impRows = []; impMappings = {};
+  window._impParsed = null;
+  document.getElementById('imp-file-info').style.display = 'none';
+  document.getElementById('imp-btn2').disabled = true;
+  document.getElementById('imp-btn1').disabled = true;
+  document.querySelectorAll('.imp-firm-btn').forEach(b=>b.classList.remove('sel'));
+  impGoStep(1);
+}
+
+// Wire import into renderPage
+const _origRenderPage = renderPage;
+// Extend renderPage to handle import tab (it's static HTML, no JS render needed)
+
+
 
 // On mobile: convert date/time inputs to type=text to avoid iOS native oversized chrome
 (function(){

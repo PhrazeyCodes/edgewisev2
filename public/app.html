@@ -698,6 +698,27 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
   .report-block { padding: 12px 0; }
   .report-label { font-size: 11px; }
   .report-val { font-size: 12px; }
+
+  /* Progress page — collapse fixed grids */
+  #wr-stats { grid-template-columns: repeat(2, 1fr) !important; }
+  #streak-row { grid-template-columns: repeat(2, 1fr) !important; }
+  .hm-controls { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+  .hm-legend { margin-left: 0 !important; }
+
+  /* Challenges page — header stacks, button stays visible */
+  #page-challenges .ph { flex-direction: column !important; gap: 12px !important; }
+  #btn-add-challenge { display: flex !important; width: 100%; justify-content: center; }
+  #challenges-empty .btn-log { display: flex !important; }
+  #challenges-grid { grid-template-columns: 1fr !important; }
+
+  /* Import page — stats row and step indicator collapse */
+  #imp-stats-row { grid-template-columns: repeat(2, 1fr) !important; }
+  #imp-steps { flex-direction: column !important; border-radius: 8px; }
+  .imp-step { border-right: none !important; border-bottom: 1px solid var(--line) !important; }
+  .imp-step:last-child { border-bottom: none !important; }
+  /* Import mapper — hide sample column, stack nicely */
+  #imp-mapper-rows > div { grid-template-columns: 1fr 1fr !important; }
+  #imp-mapper-rows .imp-sample-col { display: none; }
 }
 </style>
 </head>
@@ -730,10 +751,22 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
       <div class="nav-more-wrap" id="nav-more-wrap">
         <button class="nav-tab" id="nav-more-btn" onclick="toggleMoreMenu(event)">More ▾</button>
         <div class="nav-more-menu" id="nav-more-menu">
-          <button class="nav-more-item" data-page="progress" onclick="navMoreGo('progress')">📈 Progress</button>
-          <button class="nav-more-item" data-page="challenges" onclick="navMoreGo('challenges')">🎯 Challenges</button>
-          <button class="nav-more-item" data-page="reports" onclick="navMoreGo('reports')">📋 Reports</button>
-          <button class="nav-more-item" data-page="import" onclick="navMoreGo('import')">⬆ Import</button>
+          <button class="nav-more-item" data-page="progress" onclick="navMoreGo('progress')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Progress
+          </button>
+          <button class="nav-more-item" data-page="challenges" onclick="navMoreGo('challenges')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+            Challenges
+          </button>
+          <button class="nav-more-item" data-page="reports" onclick="navMoreGo('reports')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Reports
+          </button>
+          <button class="nav-more-item" data-page="import" onclick="navMoreGo('import')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Import
+          </button>
         </div>
       </div>
     </div>
@@ -931,12 +964,12 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
       <div class="card">
         <div class="card-title">Drawdown Heatmap</div>
         <div class="card-sub">Daily drawdown intensity — darker = closer to max loss limit</div>
-        <div style="display:flex;align-items:center;gap:16px;margin:12px 0 4px">
+        <div class="hm-controls" style="display:flex;align-items:center;gap:16px;margin:12px 0 4px;flex-wrap:wrap">
           <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Account size: $</div>
           <input type="number" id="hm-account-size" value="50000" style="width:100px;background:var(--bg2);border:1px solid var(--line2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="renderHeatmap()"/>
           <div style="font-family:var(--mono);font-size:10px;color:var(--text3)">Max daily loss %:</div>
           <input type="number" id="hm-max-dd" value="5" style="width:60px;background:var(--bg2);border:1px solid var(--line2);border-radius:6px;color:var(--text);font-family:var(--mono);font-size:12px;padding:5px 8px;outline:none" oninput="renderHeatmap()"/>
-          <div style="margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text3)">
+          <div class="hm-legend" style="margin-left:auto;display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;color:var(--text3)">
             <div style="width:12px;height:12px;border-radius:3px;background:rgba(57,196,122,.2)"></div>Safe
             <div style="width:12px;height:12px;border-radius:3px;background:rgba(212,168,75,.5);margin-left:8px"></div>Caution
             <div style="width:12px;height:12px;border-radius:3px;background:rgba(240,90,110,.8);margin-left:8px"></div>Danger
@@ -957,13 +990,14 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
     <div class="page" id="page-challenges">
       <div class="ph" style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
         <div><h1>Challenges</h1><p>Track active prop firm evaluations &amp; funded accounts</p></div>
-        <button class="btn-log" onclick="openChallengeModal()">+ Add Account</button>
+        <button class="btn-log" id="btn-add-challenge" onclick="openChallengeModal()">+ Add Account</button>
       </div>
       <div id="challenges-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px"></div>
       <div id="challenges-empty" style="display:none;text-align:center;padding:60px 20px">
-        <div style="font-size:40px;margin-bottom:12px">🎯</div>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text4)" stroke-width="1.5" stroke-linecap="round" style="margin:0 auto 12px;display:block"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
         <div style="font-family:var(--serif);font-size:18px;font-weight:300;margin-bottom:6px">No accounts tracked yet</div>
-        <div style="font-family:var(--mono);font-size:11px;color:var(--text3)">Add your active evaluations and funded accounts to track rules and progress</div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:20px">Add your active evaluations and funded accounts to track rules and progress</div>
+        <button class="btn-log" onclick="openChallengeModal()" style="margin:0 auto;display:flex">+ Add Account</button>
       </div>
     </div>
 
@@ -1142,23 +1176,23 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
     <div style="width:36px;height:3px;background:var(--line2);border-radius:2px;margin:0 auto 20px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <button class="mobile-more-tile" onclick="mobileMoreGo('ai')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a4 4 0 0 1 4 4v1h1a3 3 0 0 1 0 6h-1v1a4 4 0 0 1-8 0v-1H7a3 3 0 0 1 0-6h1V6a4 4 0 0 1 4-4z"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><path d="M9 14s1 1 3 1 3-1 3-1"/></svg>
         AI Coach
       </button>
       <button class="mobile-more-tile" onclick="mobileMoreGo('progress')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Progress
       </button>
       <button class="mobile-more-tile" onclick="mobileMoreGo('challenges')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
         Challenges
       </button>
       <button class="mobile-more-tile" onclick="mobileMoreGo('reports')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         Reports
       </button>
       <button class="mobile-more-tile" onclick="mobileMoreGo('import')" style="grid-column:1/-1">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Import CSV
       </button>
     </div>
@@ -2530,9 +2564,51 @@ function impParseCSV(text) {
   });
 }
 
+// Fuzzy-match a field key against actual CSV headers
+function impFuzzyMatch(fieldKey, headers) {
+  // Priority keyword lists per field — first match wins
+  const keywords = {
+    open_time:   [['open time','open_time','entry time','entry_time','time','date','open','datetime']],
+    close_time:  [['close time','close_time','exit time','exit_time','close','closedate']],
+    symbol:      [['symbol','instrument','ticker','contract','pair','asset']],
+    type:        [['type','side','direction','action','order type','trade type']],
+    lots:        [['volume','size','lot','lots','qty','quantity','contracts','amount']],
+    open_price:  [['open price','open_price','entry price','entry_price','openprice','open']],
+    close_price: [['close price','close_price','exit price','exit_price','closeprice','close']],
+    pnl:         [['profit','p&l','pnl','net p&l','net pnl','gain','result','realized']],
+    sl:          [['s/l','sl','stop loss','stoploss','stop_loss']],
+    tp:          [['t/p','tp','take profit','takeprofit','take_profit']],
+    swap:        [['swap']],
+    commission:  [['commission','comm','fee','fees']],
+    comment:     [['comment','comments','note','notes','remark','remarks']],
+  };
+  const lists = keywords[fieldKey];
+  if(!lists) return null;
+  const lower = headers.map(h => h.toLowerCase().trim());
+  for(const kws of lists) {
+    for(const kw of kws) {
+      const idx = lower.findIndex(h => h === kw || h.includes(kw) || kw.includes(h));
+      if(idx !== -1) return headers[idx];
+    }
+  }
+  return null;
+}
+
 function impBuildMapper() {
   const container = document.getElementById('imp-mapper-rows');
   container.innerHTML = '';
+
+  // Build smart mappings: preset first, then fuzzy fallback
+  IMP_FIELDS.forEach(field => {
+    const presetVal = impMappings[field.key];
+    const presetExists = presetVal && impHeaders.includes(presetVal);
+    if(!presetExists) {
+      const fuzzy = impFuzzyMatch(field.key, impHeaders);
+      if(fuzzy) impMappings[field.key] = fuzzy;
+      else delete impMappings[field.key];
+    }
+  });
+
   IMP_FIELDS.forEach(field => {
     const row = document.createElement('div');
     row.style.cssText = 'display:grid;grid-template-columns:1.2fr 1.4fr 1fr;border-top:1px solid var(--line)';
@@ -2547,35 +2623,36 @@ function impBuildMapper() {
     const sel = document.createElement('select');
     sel.className = 'imp-map-select';
     sel.id = 'imp-map-'+field.key;
+
     const blank = document.createElement('option');
     blank.value = '';
-    blank.textContent = field.required ? '— select —' : '— skip —';
+    blank.textContent = field.required ? '— select column —' : '— skip —';
     sel.appendChild(blank);
+
     impHeaders.forEach(h => {
       const opt = document.createElement('option');
       opt.value = h; opt.textContent = h; sel.appendChild(opt);
     });
-    const preset = impMappings[field.key];
-    if(preset && impHeaders.includes(preset)) { sel.value = preset; sel.classList.add('mapped'); }
+
+    const matched = impMappings[field.key];
+    if(matched) { sel.value = matched; sel.classList.add('mapped'); }
+
+    const sampleCell = document.createElement('div');
+    sampleCell.className = 'imp-sample-col';
+    sampleCell.style.cssText = 'padding:9px 14px;font-family:var(--mono);font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    sampleCell.id = 'imp-sample-'+field.key;
+    if(matched) sampleCell.textContent = impRows[0]?.[matched] || '—';
+
     sel.addEventListener('change', () => {
       impMappings[field.key] = sel.value;
       sel.classList.toggle('mapped', !!sel.value);
-      updateSampleCell(field.key, sel.value, sampleCell);
+      sampleCell.textContent = sel.value ? (impRows[0]?.[sel.value] || '—') : '';
     });
+
     selectCell.appendChild(sel);
-
-    const sampleCell = document.createElement('div');
-    sampleCell.style.cssText = 'padding:9px 14px;font-family:var(--mono);font-size:11px;color:var(--text2)';
-    sampleCell.id = 'imp-sample-'+field.key;
-    if(preset && impHeaders.includes(preset)) updateSampleCell(field.key, preset, sampleCell);
-
     row.appendChild(nameCell); row.appendChild(selectCell); row.appendChild(sampleCell);
     container.appendChild(row);
   });
-}
-
-function updateSampleCell(key, col, cell) {
-  cell.textContent = col ? (impRows[0]?.[col] || '—') : '';
 }
 
 function impBuildPreview() {

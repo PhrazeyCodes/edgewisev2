@@ -511,7 +511,8 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
     background: var(--bg1);
   }
   .mobile-nav-safe {
-    height: env(safe-area-inset-bottom);
+    height: env(safe-area-inset-bottom, 0px);
+    min-height: 0;
     background: var(--bg1);
   }
   .mobile-nav-btn {

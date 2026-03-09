@@ -2306,8 +2306,8 @@ const IMP_FIRM_PRESETS = {
     map: { open_time:'Entry Time', close_time:'Exit Time', symbol:'Symbol', type:'Direction', lots:'Contracts', open_price:'Entry Price', close_price:'Exit Price', pnl:'P&L' }
   },
   topstep: {
-    hint: 'Export: Topstep Dashboard → Activity → Export',
-    map: { open_time:'Entry Time', close_time:'Exit Time', symbol:'Contract', type:'Side', lots:'Qty', open_price:'Entry', close_price:'Exit', pnl:'P&L' }
+    hint: 'Export: Topstep Dashboard → Trades → Export CSV',
+    map: { open_time:'EnteredAt', close_time:'ExitedAt', symbol:'ContractName', type:'Type', lots:'Size', open_price:'EntryPrice', close_price:'ExitPrice', pnl:'PnL', commission:'Commissions' }
   },
   e8: {
     hint: 'Export: E8 Dashboard → Trading History → Download',
@@ -2409,30 +2409,45 @@ function impParseCSV(text) {
 
 // Fuzzy-match a field key against actual CSV headers
 function impFuzzyMatch(fieldKey, headers) {
-  // Priority keyword lists per field — first match wins
+  // Split PascalCase/camelCase/snake_case into words, lowercase
+  function tokenize(str) {
+    return str
+      .replace(/([a-z])([A-Z])/g, '$1 $2')   // camelCase → camel Case
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2') // ABCDef → ABC Def
+      .replace(/[_\-\.]+/g, ' ')              // snake_case, kebab-case
+      .toLowerCase().trim();
+  }
+
+  // Each entry: [exact-token-matches] — matched against tokenized header
   const keywords = {
-    open_time:   [['open time','open_time','entry time','entry_time','time','date','open','datetime']],
-    close_time:  [['close time','close_time','exit time','exit_time','close','closedate']],
-    symbol:      [['symbol','instrument','ticker','contract','pair','asset']],
-    type:        [['type','side','direction','action','order type','trade type']],
-    lots:        [['volume','size','lot','lots','qty','quantity','contracts','amount']],
-    open_price:  [['open price','open_price','entry price','entry_price','openprice','open']],
-    close_price: [['close price','close_price','exit price','exit_price','closeprice','close']],
-    pnl:         [['profit','p&l','pnl','net p&l','net pnl','gain','result','realized']],
-    sl:          [['s/l','sl','stop loss','stoploss','stop_loss']],
-    tp:          [['t/p','tp','take profit','takeprofit','take_profit']],
-    swap:        [['swap']],
-    commission:  [['commission','comm','fee','fees']],
-    comment:     [['comment','comments','note','notes','remark','remarks']],
+    open_time:   ['enteredat','filledat','open time','entry time','open date','entry date','tradeday','createdat','datetime','timestamp','time','date'],
+    close_time:  ['exitedat','cancelledat','close time','exit time','close date','exit date','settle'],
+    symbol:      ['contractname','contract name','symbol','instrument','ticker','pair','asset','market','product'],
+    type:        ['type','side','direction','action','order type','trade type','buysell'],
+    lots:        ['size','quantity','qty','volume','lot','lots','contracts','amount','filled qty','shares'],
+    open_price:  ['entryprice','entry price','execute price','executeprice','fill price','open price','avg price','price'],
+    close_price: ['exitprice','exit price','close price','settle price'],
+    pnl:         ['pnl','realized pnl','realizedpnl','net pnl','net p&l','profit loss','profit','gain','result','realized','p&l'],
+    sl:          ['stop price','stopprice','stop loss','stoploss','stop','s/l','sl'],
+    tp:          ['limit price','limitprice','take profit','takeprofit','target','t/p','tp'],
+    swap:        ['swap','rollover'],
+    commission:  ['commissions','commission','fees','fee','cost','comm'],
+    comment:     ['comment','note','notes','remark','description','label','tag'],
   };
-  const lists = keywords[fieldKey];
-  if(!lists) return null;
-  const lower = headers.map(h => h.toLowerCase().trim());
-  for(const kws of lists) {
-    for(const kw of kws) {
-      const idx = lower.findIndex(h => h === kw || h.includes(kw) || kw.includes(h));
-      if(idx !== -1) return headers[idx];
-    }
+
+  const kws = keywords[fieldKey];
+  if(!kws) return null;
+
+  // Build tokenized versions of all headers once
+  const tokenized = headers.map(h => tokenize(h));
+
+  for(const kw of kws) {
+    // 1. Exact tokenized match
+    const exact = tokenized.findIndex(t => t === kw);
+    if(exact !== -1) return headers[exact];
+    // 2. Tokenized header contains keyword as a whole word sequence
+    const contains = tokenized.findIndex(t => t.includes(kw));
+    if(contains !== -1) return headers[contains];
   }
   return null;
 }
@@ -2543,47 +2558,58 @@ function impBuildPreview() {
 
 function impRowToTrade(row) {
   const get = key => { const col = impMappings[key]; return col ? (row[col]||'') : ''; };
-  const pnlRaw = parseFloat(get('pnl').replace(/[^0-9.\-]/g,''));
+
+  // Parse P&L — required
+  const pnlRaw = parseFloat((get('pnl')||'').replace(/[^0-9.\-]/g,''));
   if(isNaN(pnlRaw)) return null;
 
-  // Parse date from open_time
+  // Subtract fees/commissions from P&L if present
+  const fees = parseFloat((get('commission')||'').replace(/[^0-9.\-]/g,'')) || 0;
+  const pnl = Math.round((pnlRaw - fees) * 100) / 100;
+
+  // Parse date — handles "03/08/2026 15:06:50 -07:00", ISO, DD.MM.YYYY etc
   const rawDate = get('open_time');
   let dateStr = today();
   if(rawDate) {
+    // Try native parse first (handles ISO + "MM/DD/YYYY HH:MM:SS ±HH:MM")
     const d = new Date(rawDate);
-    if(!isNaN(d)) dateStr = dkey(d);
-    else {
-      // Try common formats: DD.MM.YYYY, MM/DD/YYYY
-      const m = rawDate.match(/(\d{2})[.\/\-](\d{2})[.\/\-](\d{4})/);
+    if(!isNaN(d.getTime())) {
+      dateStr = dkey(d);
+    } else {
+      // DD.MM.YYYY or MM/DD/YYYY fallback
+      const m = rawDate.match(/(\d{2})[.\-\/](\d{2})[.\-\/](\d{4})/);
       if(m) dateStr = m[3]+'-'+m[2]+'-'+m[1];
     }
   }
 
-  // Parse direction
-  const rawType = get('type').toLowerCase();
+  // Parse direction — Topstep exports "Long"/"Short" directly
+  const rawType = (get('type')||'').toLowerCase().trim();
   let direction = 'Long';
-  if(rawType.includes('sell') || rawType.includes('short') || rawType === 's') direction = 'Short';
+  if(rawType === 'short' || rawType.includes('sell') || rawType === 'ask' || rawType === 's') direction = 'Short';
 
-  // Entry/exit times
-  const parseTime = s => { const m=s.match(/(\d{1,2}):(\d{2})/); return m ? m[1].padStart(2,'0')+':'+m[2] : ''; };
+  // Strip contract expiry suffix: NQH6 → NQ, ESZ5 → ES
+  const symbol = (get('symbol')||'Unknown').toUpperCase().replace(/([A-Z]+)[A-Z]\d+$/, '$1');
+
+  // Entry/exit times (HH:MM)
+  const parseTime = s => { const m=(s||'').match(/(\d{1,2}):(\d{2})/); return m ? m[1].padStart(2,'0')+':'+m[2] : ''; };
 
   return {
     id: Date.now() + Math.random(),
     date: dateStr,
-    instrument: (get('symbol')||'Unknown').toUpperCase(),
+    account: row['AccountName'] || '',
+    instrument: symbol,
     direction,
-    size: parseFloat(get('lots'))||1,
-    entryTime: parseTime(get('open_time')),
+    size: parseFloat(get('lots')) || 1,
+    entryTime: parseTime(rawDate),
     exitTime: parseTime(get('close_time')),
-    openPrice: get('open_price'),
-    closePrice: get('close_price'),
-    pnl: pnlRaw,
+    openPrice: parseFloat(get('open_price')) || '',
+    closePrice: parseFloat(get('close_price')) || '',
+    pnl,
     risk: 0, r: 0, pnlPct: 0,
     strategy: '', emotion: '', exec: 5,
-    reasoning: get('comment')||'',
-    notes: [get('swap')&&'Swap: '+get('swap'), get('commission')&&'Commission: '+get('commission')].filter(Boolean).join(' · '),
-    dayMarkers: pnlRaw > 0 ? ['win'] : pnlRaw < 0 ? ['loss'] : ['be'],
-    screenshots: [],
+    reasoning: get('comment') || '',
+    notes: fees ? `Fees: $${fees.toFixed(2)}` : '',
+    dayMarkers: [], screenshots: [],
     _imported: true
   };
 }

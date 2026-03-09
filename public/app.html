@@ -498,66 +498,62 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
 }
 @media(max-width: 680px) {
   /* Layout */
+  /* ── Mobile nav complete rebuild ── */
   .mobile-nav {
-    display: block;
     position: fixed; bottom: 0; left: 0; right: 0;
+    z-index: 90;
     background: var(--bg1);
     border-top: 1px solid var(--line);
-    z-index: 90;
     -webkit-tap-highlight-color: transparent;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .mobile-nav-inner {
-    display: flex; align-items: center; height: 64px;
-    background: var(--bg1);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: 64px;
   }
   .mobile-nav-btn {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 4px; background: transparent; border: none; outline: none;
-    color: var(--text3); cursor: pointer; padding: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px;
+    background: none; border: none; outline: none; box-shadow: none;
+    color: var(--text3); cursor: pointer;
     font-family: var(--body); font-size: 9px; font-weight: 600;
     letter-spacing: .4px; text-transform: uppercase;
     -webkit-appearance: none; appearance: none;
     -webkit-tap-highlight-color: transparent;
-    overflow: visible;
-    box-shadow: none;
-    border-radius: 0;
-  }
-  .mobile-nav-btn:focus,
-  .mobile-nav-btn:focus-visible,
-  .mobile-nav-btn:active { outline: none; box-shadow: none; background: transparent; }
-  .mobile-nav-btn svg { flex-shrink: 0; }
-  .mobile-nav-btn.active { color: var(--gold); }
-  .mobile-nav-fab {
-    flex: 1; display: flex; flex-direction: column; align-items: center;
-    justify-content: center; gap: 3px; background: transparent; border: none; outline: none;
-    cursor: pointer; padding: 0; margin: 0;
-    -webkit-appearance: none; appearance: none;
-    -webkit-tap-highlight-color: transparent;
-    overflow: visible;
-    box-shadow: none;
-    border-radius: 0;
-    align-self: center;
+    padding: 0; margin: 0;
     height: 64px;
   }
-  .mobile-nav-fab:focus,
-  .mobile-nav-fab:focus-visible,
-  .mobile-nav-fab:active { outline: none; box-shadow: none; background: transparent; }
+  .mobile-nav-btn:focus, .mobile-nav-btn:active { outline: none; box-shadow: none; background: none; }
+  .mobile-nav-btn.active { color: var(--gold); }
+  .mobile-nav-fab {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4px;
+    background: none; border: none; outline: none; box-shadow: none;
+    cursor: pointer;
+    -webkit-appearance: none; appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    padding: 0; margin: 0;
+    height: 64px;
+  }
+  .mobile-nav-fab:focus, .mobile-nav-fab:active { outline: none; box-shadow: none; background: none; }
   .mobile-nav-fab-circle {
-    width: 44px; height: 44px; border-radius: 14px;
-    background: var(--gold); display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px;
+    min-width: 44px; max-width: 44px;
+    min-height: 44px; max-height: 44px;
+    border-radius: 14px;
+    background: var(--gold);
     box-shadow: 0 4px 14px rgba(212,168,75,.4);
     transition: background .15s, transform .1s;
-    flex-shrink: 0;
-    align-self: center;
-    min-width: 44px; min-height: 44px; max-height: 44px;
   }
   .mobile-nav-fab-label {
     font-family: var(--body); font-size: 9px; font-weight: 600;
     color: var(--gold); letter-spacing: .4px; text-transform: uppercase;
     line-height: 1;
   }
-  #app { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  #app { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
 
   /* Top nav */
   .nav-tabs { display: none; }

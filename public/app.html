@@ -22,7 +22,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL = 'https://pzjaqwimwcnwcnglgzjy.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_Am_O8C2DScLX4FRrszPHPQ_dLTexo0u';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6amFxd2ltd2Nud2NuZ2xnemp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NDgyMDksImV4cCI6MjA4ODUyNDIwOX0.k9x2A8ODTFzPE0_NUgv-LUMv4P1RdCFcT4GQL4NK05M';
   const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ── UI helpers (safe to call before DOMContentLoaded) ──────────────────
@@ -107,21 +107,32 @@
     if (!window._sbUser) return;
     const { screenshots, ...rest } = trade;
     const row = { ...rest, screenshots: [], user_id: window._sbUser.id };
-    await _supabase.from('trades').upsert(row, { onConflict: 'id,user_id' });
+    const { error } = await _supabase.from('trades').upsert(row, { onConflict: 'id' });
+    if (error) {
+      console.error('[Edgewise] Supabase save error:', error.message, error.details, error.hint);
+      if (typeof showToast === 'function') showToast('Cloud save failed: ' + error.message);
+    }
   };
 
   window.deleteTradeFB = async (tradeId) => {
     if (!window._sbUser) return;
-    await _supabase.from('trades').delete().eq('id', tradeId).eq('user_id', window._sbUser.id);
+    const { error } = await _supabase.from('trades').delete().eq('id', tradeId).eq('user_id', window._sbUser.id);
+    if (error) console.error('[Edgewise] Supabase delete error:', error.message);
   };
 
   window.loadUserTrades = async () => {
     if (!window._sbUser) return;
-    const { data } = await _supabase
+    const { data, error } = await _supabase
       .from('trades').select('*')
       .eq('user_id', window._sbUser.id)
       .order('date', { ascending: false });
+    if (error) {
+      console.error('[Edgewise] Supabase load error:', error.message, error.hint);
+      if (typeof showToast === 'function') showToast('Could not load trades from cloud: ' + error.message);
+      return;
+    }
     S.trades = data || [];
+    saveLocalTrades();
     if (typeof activeTab !== 'undefined') renderPage(activeTab);
     renderDashboard();
   };
@@ -1261,6 +1272,18 @@ body { font-family: var(--body); color: var(--text); height: 100vh; overflow: hi
 <script>
 // ── State ─────────────────────────────────────────────────────────────────
 const S = { trades: [] };
+
+// ── Local persistence (fallback when Supabase is unavailable) ─────────────
+function saveLocalTrades() {
+  try { localStorage.setItem('ew-trades', JSON.stringify(S.trades)); } catch(e) {}
+}
+function loadLocalTrades() {
+  try {
+    const raw = localStorage.getItem('ew-trades');
+    if (raw) { const parsed = JSON.parse(raw); if (Array.isArray(parsed) && parsed.length) S.trades = parsed; }
+  } catch(e) {}
+}
+
 let activeTab = 'dashboard';
 let editId = null;
 let pendingShots = [];
@@ -1844,13 +1867,20 @@ async function saveTrade(){
   if(editId) S.trades=S.trades.map(x=>x.id===editId?t:x);
   else S.trades.push(t);
 
-  // Save to Firebase if signed in
+  // Persist locally so trades survive page refresh
+  saveLocalTrades();
+
+  // Save to Supabase if signed in
   if(window.saveTradeFB) await saveTradeFB(t);
 
+  // Reset editId AFTER save so next "Log Trade" creates a new entry
+  const wasEdit = !!editId;
+  editId = null;
+
   closeModal();
-  showToast(editId?'Trade updated':'Trade saved ✓');
+  showToast(wasEdit?'Trade updated':'Trade saved ✓');
+  renderDashboard();
   renderPage(activeTab);
-  if(activeTab!=='dashboard') renderDashboard();
 }
 
 // ── Theme ──────────────────────────────────────────────────────────────────
@@ -2637,6 +2667,7 @@ async function impDoImport() {
   }
 
   document.getElementById('imp-success-msg').textContent = trades.length + ' trades imported · ' + fmtPnl(trades.reduce((a,t)=>a+t.pnl,0)) + ' net P&L';
+  saveLocalTrades();
   renderDashboard();
   impGoStep(5);
   showToast(trades.length + ' trades imported ✓');
@@ -2693,6 +2724,13 @@ function mobileMoreGo(page) {
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   activeTab = page; renderPage(page);
+}
+
+// ── Load locally persisted trades on startup (works without Supabase login) ──
+// Only load if Supabase hasn't already populated S.trades via loadUserTrades
+if (!S.trades.length) {
+  loadLocalTrades();
+  if (S.trades.length) renderDashboard();
 }
 
 // ── Challenges are localStorage-backed — init immediately on page load
